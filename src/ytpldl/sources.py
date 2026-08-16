@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from yt_dlp import YoutubeDL
@@ -10,11 +11,23 @@ from yt_dlp import YoutubeDL
 # Free-download originals we treat as genuinely lossless.
 LOSSLESS_EXTS = {"wav", "flac", "aif", "aiff", "alac"}
 
+# JavaScript runtimes yt-dlp can use to solve YouTube's signature / "n"
+# throttling challenges. Without one, many audio URLs 403. yt-dlp uses
+# whichever of these is actually installed and ignores the rest. The Python
+# API expects a {runtime: {config}} dict (unlike the CLI's list form).
+JS_RUNTIMES = {"deno": {}, "node": {}, "bun": {}}
+
 _QUIET_OPTS = {
     "quiet": True,
     "no_warnings": True,
     "noprogress": True,
     "ignoreerrors": True,
+    "js_runtimes": JS_RUNTIMES,
+    "retries": 5,
+    "fragment_retries": 5,
+    "extractor_retries": 3,
+    # Space out requests a little to avoid tripping YouTube rate-limiting.
+    "sleep_interval_requests": 1,
 }
 
 
@@ -128,8 +141,29 @@ def _pick_single_output(tempdir: str, before: set) -> str:
     return os.path.join(tempdir, new[0])
 
 
-def download_youtube(url: str, tempdir: str) -> str:
-    """Download the best audio-only stream (Opus) into tempdir; return path."""
+def _cleanup_new(tempdir: str, before: set) -> None:
+    """Remove files created since ``before`` (partial/failed download debris)."""
+    for f in set(os.listdir(tempdir)) - before:
+        try:
+            os.remove(os.path.join(tempdir, f))
+        except OSError:
+            pass
+
+
+def download_youtube(
+    url: str,
+    tempdir: str,
+    cookies_from_browser: Optional[str] = None,
+    attempts: int = 5,
+    backoff: float = 3.0,
+) -> str:
+    """Download the best audio-only stream (Opus) into tempdir; return path.
+
+    Uses yt-dlp's own (multi-client) selection, which is best at picking a
+    format with a working URL. YouTube's SABR/rate-limiting can still hand out a
+    403-prone URL, so on failure we re-extract from scratch after a growing
+    delay — a fresh extraction usually yields a working URL.
+    """
     before = set(os.listdir(tempdir))
     outtmpl = os.path.join(tempdir, "%(id)s.%(ext)s")
     opts = {
@@ -138,9 +172,22 @@ def download_youtube(url: str, tempdir: str) -> str:
         "format": "bestaudio/best",
         "outtmpl": outtmpl,
     }
-    with YoutubeDL(opts) as ydl:
-        ydl.extract_info(url, download=True)
-    return _pick_single_output(tempdir, before)
+    if cookies_from_browser:
+        opts["cookiesfrombrowser"] = (cookies_from_browser,)
+
+    last_err: Optional[Exception] = None
+    for attempt in range(1, attempts + 1):
+        try:
+            with YoutubeDL(opts) as ydl:
+                ydl.extract_info(url, download=True)
+            return _pick_single_output(tempdir, before)
+        except Exception as exc:
+            last_err = exc
+            _cleanup_new(tempdir, before)
+            if attempt < attempts:
+                time.sleep(backoff * attempt)
+
+    raise last_err or ExtractionError("download failed after retries")
 
 
 def download_soundcloud(url: str, format_id: str, tempdir: str) -> str:

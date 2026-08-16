@@ -8,7 +8,12 @@ from typing import List, Optional
 
 from ytpldl import __version__
 from ytpldl.config import Config
-from ytpldl.deps import MissingDependencyError, check_dependencies
+from ytpldl.deps import (
+    JS_RUNTIME_HINT,
+    MissingDependencyError,
+    check_dependencies,
+    detect_js_runtime,
+)
 from ytpldl.pipeline import run
 from ytpldl.sources import ExtractionError
 
@@ -75,6 +80,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--no-number", action="store_true",
         help="do not prefix filenames with the playlist track number",
     )
+    p.add_argument(
+        "--cookies-from-browser", metavar="BROWSER", default=None,
+        help="pull YouTube cookies from a browser (e.g. chrome, firefox, edge) "
+             "to avoid HTTP 403 on stubborn videos; close the browser first",
+    )
     p.add_argument("--keep-temp", action="store_true", help="keep intermediate files")
     p.add_argument(
         "-y", "--yes", action="store_true",
@@ -112,6 +122,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 
+    if detect_js_runtime() is None:
+        print(f"Warning: {JS_RUNTIME_HINT}\n", file=sys.stderr)
+
     url = args.url or _prompt_url()
     if not url:
         print("No playlist URL provided.", file=sys.stderr)
@@ -138,6 +151,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         keep_temp=args.keep_temp,
         number=not args.no_number,
         assume_yes=args.yes,
+        cookies_from_browser=args.cookies_from_browser,
     )
 
     try:

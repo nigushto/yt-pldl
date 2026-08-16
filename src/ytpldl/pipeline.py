@@ -105,7 +105,9 @@ def _process_track(
     else:
         print("         -> YouTube (best audio / Opus)")
         yt_url = info.get("webpage_url") or f"https://www.youtube.com/watch?v={info.get('id')}"
-        src_path = sources.download_youtube(yt_url, temp_root)
+        src_path = sources.download_youtube(
+            yt_url, temp_root, cookies_from_browser=cfg.cookies_from_browser
+        )
         preserve = False
         summary.from_youtube += 1
 

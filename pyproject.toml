@@ -9,7 +9,7 @@ description = "Download a YouTube playlist as high-resolution WAVs, with optiona
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-authors = [{ name = "yt-pldl contributors" }]
+authors = [{ name = "nigushto" }]
 keywords = [
     "youtube",
     "soundcloud",

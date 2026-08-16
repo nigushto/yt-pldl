@@ -52,8 +52,27 @@ YouTube track (artist, title, duration, is-remix?)
   - Windows: `winget install Gyan.FFmpeg` (or `choco install ffmpeg`)
   - macOS: `brew install ffmpeg`
   - Linux: `sudo apt install ffmpeg`
+- **A JavaScript runtime** — **Node**, **Deno**, or **Bun** on your `PATH`.
+  YouTube now requires solving JS challenges to unlock audio streams; without a
+  runtime many tracks fail with `HTTP 403`. Any one works:
+  - Node: <https://nodejs.org> (`winget install OpenJS.NodeJS`)
+  - Deno: <https://deno.land> (`winget install DenoLand.Deno`)
 
-`yt-dlp` is installed automatically as a Python dependency.
+`yt-dlp` is installed automatically as a Python dependency. yt-dlp uses whatever
+JS runtime it finds, so you don't need to configure anything.
+
+### Dealing with occasional HTTP 403
+
+YouTube runs rate-limiting/anti-bot experiments, so a track may 403 on the first
+try. yt-pldl automatically retries each track with a short back-off, which
+clears almost all of these. For a playlist that still has a stubborn failure,
+pass browser cookies (authenticated requests rarely get throttled):
+
+```bash
+ytpldl "https://youtube.com/playlist?list=..." --cookies-from-browser firefox
+```
+
+Close the browser first so its cookie database isn't locked.
 
 ## Install
 
@@ -97,6 +116,7 @@ ytpldl "https://www.youtube.com/playlist?list=PLxxxxxxxx"
 | `--no-preserve-native` | Downsample lossless SoundCloud sources instead of keeping native rate | off |
 | `--sc-tolerance SEC` | Allowed duration difference for a SoundCloud match | `3` |
 | `--sc-results N` | SoundCloud search results inspected per track | `5` |
+| `--cookies-from-browser BROWSER` | Use a browser's YouTube cookies to avoid 403s (e.g. `firefox`, `chrome`, `edge`) | none |
 | `-o, --output DIR` | Where the playlist folder is created | current dir |
 | `--no-number` | Don't prefix filenames with the track number | off |
 | `--keep-temp` | Keep intermediate files | off |

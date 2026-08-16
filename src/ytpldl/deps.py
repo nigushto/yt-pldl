@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import shutil
-from typing import List
+from typing import List, Optional
+
+# JavaScript runtimes yt-dlp can use to solve YouTube challenges.
+_JS_RUNTIMES = ["deno", "node", "bun"]
 
 
 class MissingDependencyError(RuntimeError):
@@ -12,6 +15,23 @@ class MissingDependencyError(RuntimeError):
 
 def _find(name: str) -> bool:
     return shutil.which(name) is not None
+
+
+def detect_js_runtime() -> Optional[str]:
+    """Return the first installed JS runtime name, or None if none found."""
+    for name in _JS_RUNTIMES:
+        if _find(name):
+            return name
+    return None
+
+
+JS_RUNTIME_HINT = (
+    "No JavaScript runtime (deno/node/bun) found on PATH. YouTube now needs one "
+    "to unlock audio streams; without it some tracks will fail with HTTP 403.\n"
+    "Install one (any works):\n"
+    "  Node:  https://nodejs.org  (or: winget install OpenJS.NodeJS)\n"
+    "  Deno:  https://deno.land   (or: winget install DenoLand.Deno)"
+)
 
 
 def check_dependencies() -> None:

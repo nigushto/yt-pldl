@@ -48,3 +48,7 @@ class Config:
     keep_temp: bool = False
     number: bool = True
     assume_yes: bool = False
+
+    # Optional browser to pull YouTube cookies from (e.g. "chrome", "firefox").
+    # Authenticated requests are far less likely to hit HTTP 403.
+    cookies_from_browser: Optional[str] = None
