@@ -48,6 +48,7 @@ Issues = "https://github.com/nigushto/yt-pldl/issues"
 
 [project.scripts]
 ytpldl = "ytpldl.cli:main"
+ytvid = "ytpldl.video_cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ytpldl"]

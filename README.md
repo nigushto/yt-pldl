@@ -132,6 +132,32 @@ ytpldl -o ~/Music "https://youtube.com/playlist?list=..." --source youtube --wav
 ytpldl --extended "https://youtube.com/playlist?list=..."
 ```
 
+## Bonus: download a single video (`ytvid`)
+
+The package also installs a **`ytvid`** command that downloads one YouTube video
+as a **Full HD (1080p) mp4** into your **Videos folder**:
+
+```bash
+ytvid                                         # prompts for the URL
+ytvid "https://www.youtube.com/watch?v=..."   # straight to your Videos folder
+```
+
+It prefers **H.264** so the file plays everywhere (4K on YouTube is only served
+as AV1/VP9, which needs special codecs), and downloads in 10 MiB chunks so large
+files don't die to YouTube's mid-download `HTTP 403` throttling.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-o, --output DIR` | Destination folder | your Videos folder |
+| `--max-height PX` | Cap height, e.g. `1080`, `720`, `480` | `1080` |
+| `--any-codec` | Allow VP9/AV1 (smaller/higher-res, may need codecs) | off |
+| `--cookies-from-browser BROWSER` | Use browser cookies to beat stubborn 403s | none |
+
+```bash
+# 720p to a specific folder
+ytvid "https://youtube.com/watch?v=..." --max-height 720 -o "D:\Clips"
+```
+
 ## A note on audio quality
 
 YouTube's best audio is **Opus (~160 kbps, lossy)**. Converting it to WAV gives
